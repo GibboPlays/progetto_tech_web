@@ -1,0 +1,62 @@
+{% extends 'basebs.html' %}
+
+{% block title %} Cerca tra i libri{% endblock %} 
+
+{% load crispy_forms_tags %} 
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous"> 
+
+{% block header1 %}
+  <h1>Cerca tra i libri</h1>
+{% endblock %}
+
+{% block content %} 
+
+<h2> Cerca tra i libri </h2>
+
+<br>
+
+<br>
+
+<div class="d-flex justify-content-center">
+
+  {% crispy form %}
+
+</div>
+<br>
+
+<br>
+
+<script type="text/javascript">
+
+  var stringText = document.getElementById("id_search_string");
+  stringText.onkeyup = autoComplete;
+  stringText.autocomplete = "off";
+
+  function autoComplete(){
+
+    var s = stringText.value;
+
+    if(s.length<3){
+        return;
+    }
+    else{
+
+      const w = document.getElementById("id_search_where").value;
+      const xhttp = new XMLHttpRequest();
+      xhttp.onload = function() {
+
+          if(xhttp.status == 200)
+            stringText.value = this.responseText;
+            
+          console.log(this.responseText);
+      }
+      xhttp.open("GET", "gethint/?w=" + w + "&q=" + s);
+      xhttp.send();
+    }
+
+  }
+
+
+</script>
+
+{% endblock %}

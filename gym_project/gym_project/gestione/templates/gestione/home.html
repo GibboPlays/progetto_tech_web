@@ -1,0 +1,46 @@
+{% extends 'basebs.html' %}
+
+{% block title %} Home di Gestione {% endblock %} 
+
+{% block header1 %}
+  <h1>Home di Gestione</h1>
+  <p>Welcome 
+    {% if user.is_authenticated %}
+     {{ user.username }}
+    {% else %}
+    Utente non registrato
+    {% endif %}
+  </p> 
+{% endblock %}
+
+{% block content %} 
+
+<h2>Cosa vuoi fare oggi?</h2>
+
+<br>
+
+<div class="list-group">
+  <a href="{% url 'gestione:cercalibro' %}" class="list-group-item list-group-item-info">Cerca un libro</a>
+  <a href="{% url 'gestione:listalibri' %}" class="list-group-item list-group-item-info">Lista dei titoli</a>
+  <a href="{% url 'gestione:situation' %}" class="list-group-item list-group-item-info">La mia situazione</a>
+</div>
+
+<br>
+
+{% if user.is_staff %}
+<br>
+<a href="{% url 'registerb' %}" class="list-group-item list-group-item-danger">Iscrivi un bibliotecario</a>
+<br>
+{% endif %}
+
+
+{% if "Bibliotecari" in user.groups.all.0.name or user.is_staff %}
+<br>
+<a href="{% url 'gestione:situationb' %}" class="list-group-item list-group-item-warning">Situazione Biblioteca</a>
+<a href="{% url 'gestione:crealibro' %}" class="list-group-item list-group-item-warning">Aggiungi un libro</a>
+<a href="{% url 'gestione:creacopia' %}" class="list-group-item list-group-item-warning">Aggiungi una copia</a>
+<br>
+{% endif %}
+
+
+{% endblock %}

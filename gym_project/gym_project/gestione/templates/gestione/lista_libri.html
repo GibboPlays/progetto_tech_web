@@ -1,0 +1,43 @@
+{% extends 'basebs.html' %}
+
+{% block title %} Lista dei libri{% endblock %} 
+
+{% block header1 %}
+  <h1>Lista dei Libri</h1>
+{% endblock %}
+
+{% block content %} 
+
+<h2> {{ view.titolo }} {{ object_list.count }} libri </h2>
+
+<br>
+
+{% for l in object_list %}
+<br>
+<div class="card">
+  <div class="card-header">
+    {% if l.disponibile %}
+     Libro disponibile per il prestito
+    {% else %}
+     Libro attualmente non disponibile
+     {% endif %}
+  </div>
+  <div class="card-body">
+    <h5 class="card-title">{{ l.titolo }}</h5>
+    <p class="card-text">Un libro di {{ l.autore }} di ben {{ l.pagine }} pagine...</p>
+
+    {% if l.disponibile %}
+    <a href="{% url 'gestione:prestito' l.pk %}" class="btn btn-info">
+    {% else %}
+    <a href="#" class="btn btn-info disabled">
+    {% endif %}
+    Prendilo in Prestito!</a> 
+
+  </div>
+</div>
+<br>
+{%endfor%}
+
+<br>
+
+{% endblock %}

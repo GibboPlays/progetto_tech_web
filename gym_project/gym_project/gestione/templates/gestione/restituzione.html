@@ -1,0 +1,24 @@
+{% extends 'basebs.html' %}
+
+{% load crispy_forms_tags %} 
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous"> 
+
+{% block title %} Restituzione di {{object.libro.titolo}} {% endblock %} 
+
+{% block header1 %}
+  <h1>Copia con id {{object.pk}}</h1>
+{% endblock %}
+
+{% block content %} 
+
+{% if "NO_ERRORS" == view.errore %}
+<div class="alert alert-success" role="alert">
+  La restituzione è andata a buon fine: la copia con id {{ copia.pk }} è di nuovo in biblioteca
+{% else %}
+<div class="alert alert-danger" role="alert">
+  Restituzione fallita: {{ view.errore }}
+{% endif %}
+</div>
+
+
+{% endblock %}

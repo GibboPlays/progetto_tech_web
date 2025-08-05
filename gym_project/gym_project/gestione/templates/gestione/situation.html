@@ -1,0 +1,44 @@
+{% extends 'basebs.html' %}
+
+
+{% block title %} Home di {{user.username}} {% endblock %} 
+
+{% block header1 %}
+  <h1>Home di {{user.username}} </h1>
+  <p>Welcome 
+    {% if user.is_authenticated %}
+     {{ user.username }}
+    {% else %}
+    Utente non registrato
+    {% endif %}
+  </p> 
+{% endblock %}
+
+{% block content %} 
+
+<h2>Risulta che hai correntemente in prestito: {{ listacopie.count }} copie </h2>
+
+<p> Ulteriori dettagli </p>
+
+<br>
+
+{% for c in listacopie %}
+<br>
+<div class="card">
+  <div class="card-header">
+     Copia con id {{ c.pk }}
+  </div>
+  <div class="card-body">
+    <h5 class="card-title">{{ c.libro.titolo }}</h5>
+    <p class="card-text">Un libro di {{ c.libro.autore }} di ben {{ c.libro.pagine }} pagine...</p>
+    
+    <a href="{% url 'gestione:restituzione' c.pk %}" class="btn btn-info"> Restituiscimi </a> 
+
+  </div>
+</div>
+<br>
+{%endfor%}
+
+<br>
+
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'basebs.html' %}
+
+
+{% block title %} Situazione Biblioteca {% endblock %} 
+
+{% block header1 %}
+  <h1>Loggato come {{user.username}} </h1>
+  <p>Welcome 
+     {{ user.username }}
+  </p> 
+{% endblock %}
+
+{% block content %} 
+
+<h2> Stato attuale della biblioteca </h2>
+
+<br>
+
+{% for l in object_list  %}
+<br>
+<div class="card">
+  <div class="card-header">
+     Libro con id {{ l.pk }}
+  </div>
+  <div class="card-body">
+    <h5 class="card-title">{{ l.titolo }} di {{l.autore}} </h5>
+    <p class="card-text"> {{ l }} </p>
+    
+    <a href="{% url 'gestione:detailb' l.pk %}" class="btn btn-info"> Visualizza Dettagli Aggiuntivi </a> 
+
+  </div>
+</div>
+<br>
+{%endfor%}
+
+<br>
+
+{% endblock %}
