@@ -1,4 +1,4 @@
-{% extends 'basebs.html' %}
+{% extends 'basegym.html' %}
 
 {% block title %} Home di Gestione {% endblock %} 
 
@@ -20,8 +20,8 @@
 <br>
 
 <div class="list-group">
-  <a href="{% url 'gestione:cercalibro' %}" class="list-group-item list-group-item-info">Cerca un libro</a>
-  <a href="{% url 'gestione:listalibri' %}" class="list-group-item list-group-item-info">Lista dei titoli</a>
+  <a href="{% url 'gestione:cercadisciplina' %}" class="list-group-item list-group-item-info">Cerca una disciplina</a>
+  <a href="{% url 'gestione:listadiscipline' %}" class="list-group-item list-group-item-info">Lista delle discipline</a>
   <a href="{% url 'gestione:situation' %}" class="list-group-item list-group-item-info">La mia situazione</a>
 </div>
 
@@ -29,16 +29,16 @@
 
 {% if user.is_staff %}
 <br>
-<a href="{% url 'registerb' %}" class="list-group-item list-group-item-danger">Iscrivi un bibliotecario</a>
+<a href="{% url 'registerg' %}" class="list-group-item list-group-item-danger">Iscrivi un personal trainer</a>
 <br>
 {% endif %}
 
 
-{% if "Bibliotecari" in user.groups.all.0.name or user.is_staff %}
+{% if "Personal Trainers" in user.groups.all.0.name or user.is_staff %}
 <br>
-<a href="{% url 'gestione:situationb' %}" class="list-group-item list-group-item-warning">Situazione Biblioteca</a>
-<a href="{% url 'gestione:crealibro' %}" class="list-group-item list-group-item-warning">Aggiungi un libro</a>
-<a href="{% url 'gestione:creacopia' %}" class="list-group-item list-group-item-warning">Aggiungi una copia</a>
+<a href="{% url 'gestione:situationg' %}" class="list-group-item list-group-item-warning">Situazione Palestra</a>
+<a href="{% url 'gestione:creadisciplina' %}" class="list-group-item list-group-item-warning">Aggiungi una disciplina</a>
+<a href="{% url 'gestione:creacorso' %}" class="list-group-item list-group-item-warning">Aggiungi un corso</a>
 <br>
 {% endif %}
 

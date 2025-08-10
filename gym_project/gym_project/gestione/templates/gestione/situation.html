@@ -1,4 +1,4 @@
-{% extends 'basebs.html' %}
+{% extends 'basegym.html' %}
 
 
 {% block title %} Home di {{user.username}} {% endblock %} 
@@ -16,23 +16,26 @@
 
 {% block content %} 
 
-<h2>Risulta che hai correntemente in prestito: {{ listacopie.count }} copie </h2>
+<h2>Risulta che hai correntemente prenotato: {% if listacorsi %} {{ listacorsi.count }} {% else %} 0 {% endif %} corsi </h2>
 
 <p> Ulteriori dettagli </p>
 
 <br>
 
-{% for c in listacopie %}
+{% for c in listacorsi %}
 <br>
 <div class="card">
   <div class="card-header">
-     Copia con id {{ c.pk }}
+     Corso di {{ c.disciplina.nome }}
   </div>
   <div class="card-body">
-    <h5 class="card-title">{{ c.libro.titolo }}</h5>
-    <p class="card-text">Un libro di {{ c.libro.autore }} di ben {{ c.libro.pagine }} pagine...</p>
+    <h5 class="card-title">{{c.data}}</h5>
+    <p class="card-text">svolto da {{ c.disciplina.personal_trainer.username }}</p>
     
-    <a href="{% url 'gestione:restituzione' c.pk %}" class="btn btn-info"> Restituiscimi </a> 
+    <form action="{% url 'gestione:disdetta' c.pk%}" method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Disdici</button>
+  </form>
 
   </div>
 </div>

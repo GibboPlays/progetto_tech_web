@@ -1,0 +1,38 @@
+{% extends 'basegym.html' %}
+
+
+{% block title %} Situazione Palestra {% endblock %} 
+
+{% block header1 %}
+  <h1>Loggato come {{user.username}} </h1>
+  <p>Welcome 
+     {{ user.username }}
+  </p> 
+{% endblock %}
+
+{% block content %} 
+
+<h2> Stato attuale della palestra </h2>
+
+<br>
+
+{% for d in object_list  %}
+<br>
+<div class="card">
+  <div class="card-header">
+     Disciplina con id {{ d.pk }}
+  </div>
+  <div class="card-body">
+    <h5 class="card-title">{{ d.nome }} di {{d.personal_trainer.username}} </h5>
+    <p class="card-text"> {{ d }} </p>
+    
+    <a href="{% url 'gestione:detailg' d.pk %}" class="btn btn-info"> Visualizza Dettagli Aggiuntivi </a> 
+
+  </div>
+</div>
+<br>
+{%endfor%}
+
+<br>
+
+{% endblock %}

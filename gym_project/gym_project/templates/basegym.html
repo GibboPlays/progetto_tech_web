@@ -62,7 +62,7 @@
 
 <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
     {% block navbar %}
-    <a class="navbar-brand" href="{% url 'home' %}">Biblio3</a>
+    <a class="navbar-brand" href="{% url 'home' %}">gym_project</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -75,11 +75,11 @@
         </li>
 
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'gestione:listalibri' %}">Lista dei Libri</a>
+          <a class="nav-link" href="{% url 'gestione:listadiscipline' %}">Lista delle Discipline</a>
         </li>
         
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'gestione:cercalibro' %}">Cerca un Libro</a>
+          <a class="nav-link" href="{% url 'gestione:cercadisciplina' %}">Cerca un Disciplina</a>
         </li>
 
       </ul>

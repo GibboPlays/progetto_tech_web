@@ -1,0 +1,38 @@
+{% extends 'basegym.html' %}
+
+{% block title %} Lista delle discipline{% endblock %} 
+
+{% block header1 %}
+  <h1>Lista delle Discipline</h1>
+{% endblock %}
+
+{% block content %} 
+
+<h2> {{ view.nome }} {{ object_list.count }} discipline </h2>
+
+<br>
+
+{% for d in object_list %}
+<br>
+<div class="card">
+  <div class="card-header">
+    Disciplina tenuta da 
+    {% if d.personal_trainer.username %}
+      {{ d.personal_trainer.username }}
+    {% else %}
+      nessuno
+     {% endif %}
+  </div>
+  <div class="card-body">
+    <h5 class="card-title">
+      <a href="{% url 'gestione:listacorsi' d.pk %}">{{ d.nome }}</a>
+    </h5>
+
+  </div>
+</div>
+<br>
+{%endfor%}
+
+<br>
+
+{% endblock %}

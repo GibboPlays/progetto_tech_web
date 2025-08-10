@@ -1,0 +1,33 @@
+{% extends 'basegym.html' %}
+
+{% block title %} Lista dei corsi{% endblock %} 
+
+{% block header1 %}
+  <h1>Lista dei Corsi</h1>
+{% endblock %}
+
+{% block content %} 
+
+<h2> {{ view.nome }} Numero corsi di {{disciplina.nome}}: {{ object_list.count }} </h2>
+
+<br>
+
+{% for corso in object_list %}
+<br>
+<div class="card">
+  <div class="card-header">
+    Corso tenuto il {{ corso.data }}
+
+    <form action="{% url 'gestione:prenotazione' corso.pk%}" method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Prenota</button>
+    </form>
+
+  </div>
+</div>
+<br>
+{%endfor%}
+
+<br>
+
+{% endblock %}

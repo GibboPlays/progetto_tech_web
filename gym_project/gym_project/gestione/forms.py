@@ -14,6 +14,16 @@ class SearchForm(forms.Form):
     search_where = forms.ChoiceField(label="Dove?", required=True, choices=CHOICE_LIST)
 
 
+class CreateDisciplinaForm(forms.ModelForm):
+    helper = FormHelper()
+    helper.form_id = "adddisciplina_crispy_form"
+    helper.form_method = "POST"
+    helper.add_input(Submit("submit","Aggiungi Disciplina"))
+
+    class Meta:
+        model = Disciplina
+        fields = ["nome","personal_trainer"]
+
 class CreateCorsoForm(forms.ModelForm):
     helper = FormHelper()
     helper.form_id = "addcorso_crispy_form"
@@ -21,18 +31,8 @@ class CreateCorsoForm(forms.ModelForm):
     helper.add_input(Submit("submit","Aggiungi Corso"))
 
     class Meta:
-        model = Libro
-        fields = ["nome","personal trainer"]
-
-class CreateOccorrenzaForm(forms.ModelForm):
-    helper = FormHelper()
-    helper.form_id = "addoccorrenza_crispy_form"
-    helper.form_method = "POST"
-    helper.add_input(Submit("submit","Aggiungi Occorrenza"))
-
-    class Meta:
-        model = Occorrenza
-        fields = ["corso","data","partecipanti massimi"]
+        model = Corso
+        fields = ["disciplina","data","max_partecipanti"]
 
 
 

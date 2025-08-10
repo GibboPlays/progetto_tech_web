@@ -1,4 +1,4 @@
-{% extends 'basebs.html' %}
+{% extends 'basegym.html' %}
 
 {% load crispy_forms_tags %} 
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous"> 
@@ -14,19 +14,19 @@
 <br>
 <div class="card">
   <div class="card-header">
-     Libro con id {{ object.pk }}
+     Disciplina con id {{ object.pk }}
   </div>
   <div class="card-body">
     <h5 class="card-title">{{ object.titolo }} di {{object.autore}} </h5>
     <p class="card-text"> 
       <ul>
-            {% for c in object.copie.all %}
+            {% for c in object.corsi.all %}
 
-            <li>  Copia con id: {{c.pk}} 
-               {% if c.data_prestito  %}
-                 in prestito a {{ c.utente.username }} dal {{ c.data_prestito }}
+            <li>  Occorrenze con id: {{c.pk}} 
+               {% if !c.disponibile()  %}
+                  ha raggiunto il numero massimo di partecipanti ({{c.max_partecipanti}})
                {% else %} 
-                  Attualmente non in prestito.
+                  Prenotabile.
                 {% endif %}
             </li>
 

@@ -20,27 +20,27 @@ def gestione_home(request):
     return render(request,template_name="gestione/home.html")
 
 
-class CorsoListView(ListView):
+class DisciplinaListView(ListView):
     titolo = "La nostra palestra possiede"
-    model = Corso
-    template_name = "gestione/lista_corsi.html"
+    model = Disciplina
+    template_name = "gestione/lista_discipline.html"
 
 
-def search(request):
+def search_disciplina(request):
 
     if request.method == "POST":
         form = SearchForm(request.POST)
         if form.is_valid():
             sstring = form.cleaned_data.get("search_string")
             where = form.cleaned_data.get("search_where")
-            return redirect("gestione:ricerca_risultati", sstring, where)
+            return redirect("gestione:ricerca_disciplina_risultati", sstring, where)
     else:
         form = SearchForm()
 
-    return render(request,template_name="gestione/ricerca.html",context={"form":form})
+    return render(request,template_name="gestione/ricerca_discipline.html",context={"form":form})
     #return render(request,template_name="gestione/ricerca_ajax.html",context={"form":form})
 
-class CorsoRicercaView(CorsoListView):
+class DisciplinaRicercaView(DisciplinaListView):
     titolo = "La tua ricerca ha dato come risultato"
 
     def get_queryset(self):
@@ -53,68 +53,113 @@ class CorsoRicercaView(CorsoListView):
             qq = self.model.objects.filter(personaltrainer__icontains=sstring)
 
         return qq
+    
+class CorsoListView(ListView):
+    titolo = "Corsi riguardanti la disciplina"
+    model = Corso
+    template_name = "gestione/lista_corsi.html"
+
+    def get_queryset(self):
+
+        filtrato = Corso.objects.filter(data__gt=timezone.now().date())
+        
+        filtrato = filtrato.filter(disciplina__pk=self.kwargs['pk'])
+
+        return filtrato.exclude(utenti__pk=self.request.user.pk)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['disciplina'] = Disciplina.objects.get(pk=self.kwargs['pk'])
+        return context
+
+def search_corso(request):
+
+    if request.method == "POST":
+        form = SearchForm(request.POST)
+        if form.is_valid():
+            sstring = form.cleaned_data.get("search_string")
+            where = form.cleaned_data.get("search_where")
+            return redirect("gestione:ricerca_corso_risultati", sstring, where)
+    else:
+        form = SearchForm()
+
+    return render(request,template_name="gestione/ricerca_corsi.html",context={"form":form})
+    #return render(request,template_name="gestione/ricerca_ajax.html",context={"form":form})
+
+class CorsoRicercaView(CorsoListView):
+    titolo = "La tua ricerca ha dato come risultato"
+
+    #Per filtrare per disciplina i corsi
+    def get_queryset(self):
+        sstring = self.request.resolver_match.kwargs["sstring"] 
+        where = self.request.resolver_match.kwargs["where"]
+
+        if "data" in where:
+            qq = self.model.objects.filter(data__icontains=sstring)
+        else:
+            qq = self.model.objects.filter(max_partecipanti__icontains=sstring)
+
+        return qq
 
 @login_required
 def prenotazione(request, pk):
-    occorrenza = get_object_or_404(Corso,pk=pk)
+    corso = get_object_or_404(Corso,pk=pk)
 
     errore = "NO_ERRORS"
-    if occorrenza.disponibile() == False:
+    if corso.disponibile() == False:
         errore = "Numero di posti esauriti!"
 
-    if occorrenza.data > timezone.now():
+    if corso.data < timezone.now().date():
         errore = "Il corso è già stato tenuto!"
 
-    try:
-        o.save()
-        print("Prenotazione effettuata con successo " + str(occorrenza) )
-    except Exception as e:
-        errore = "Errore nella prenotazione"
-        print(errore + " " + str(e))
+    if (errore == "NO_ERRORS"):
+        try:
+            corso.utenti.add(request.user)
+            corso.save()
+            print("Prenotazione effettuata con successo " + str(corso) )
+        except Exception as e:
+            errore = "Errore nella prenotazione"
+            print(errore + " " + str(e))
 
-    return render(request,"gestione/prestito.html",{"errore":errore,"Corso tenuto":o})
+    return render(request,"gestione/prenotazione.html",{"errore":errore,"corso":corso})
 
 @login_required
 def my_situation(request):
     user = get_object_or_404(User, pk=request.user.pk)
-    occorrenze = user.occorrenze_iscritto.all()
-    ctx = { "listacorsi" : occorrenze }
+    corsi = user.corsi_iscritto.all()
+    ctx = { "listacorsi" : corsi }
     return render(request,"gestione/situation.html",ctx)
 
-class RestituisciView(LoginRequiredMixin, DetailView):
-    model = Corso
-    template_name = "gestione/restituzione.html"
+@login_required
+def disdetta(request, pk):
+    corso = get_object_or_404(Corso,pk=pk)
+    user = request.user
+
     errore = "NO_ERRORS"
+    if user not in corso.utenti.all():
+        errore = "Non puoi disdire una prenotazione non tua!"
 
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        o = ctx["object"]
+    if errore == "NO_ERRORS":
+        try:
+            corso.utenti.remove(user)
+            corso.save()
+            print("Disdetta effettuata con successo " + str(corso) )
+        except Exception as e:
+            print("Errore! " + str(e))
+            errore = "Errore nell'operazione di disdetta"
 
-        
-        if self.request.user.pk in [i.pk for i in o.utenti]:
-            self.errore = "Non puoi disdire una prenotazione non tua!"
-
-        if self.errore == "NO_ERRORS":
-            try:
-                rem = [i for i in o.utenti if i.pk == self.request.user.pk]
-                o.utenti.remove(rem[0]) = None
-                o.save()
-            except Exception as e:
-                print("Errore! " + str(e))
-                self.errore = "Errore nell'operazione di disdetta"
-
-        return ctx
+    return render(request,"gestione/disdetta.html",{"errore":errore,"corso":corso})
 
 def get_hint(request):
 
     response = request.GET["q"]
 
     if(request.GET["w"]=="Nome"):
-        q = Corso.objects.filter(corso__icontains=response)
+        q = Disciplina.objects.filter(disciplina__icontains=response)
         if len(q) > 0: 
             response = q[0].nome
     else: 
-        q = Corso.objects.filter(personaltrainer__icontains=response)
+        q = Disciplina.objects.filter(personaltrainer__icontains=response)
         if len(q) > 0: 
             response = q[0].personal_trainer
 
@@ -124,22 +169,22 @@ def get_hint(request):
 
 class GymSituationView(GroupRequiredMixin, ListView):
     group_required = ["Personal Trainers"]
-    model = Occorrenza
-    template_name = "gestione/situationb.html"
+    model = Corso
+    template_name = "gestione/situationg.html"
 
 class GymDetailView(GroupRequiredMixin, DetailView):
     group_required = ["Personal Trainers"]
-    model = Occorrenza
-    template_name = "gestione/detailb.html"
+    model = Corso
+    template_name = "gestione/detailg.html"
 
-class CreateCorsoView(GroupRequiredMixin, CreateView):
+class CreateDisciplinaView(GroupRequiredMixin, CreateView):
     group_required = ["Personal Trainers"]
-    title = "Aggiungi un corso alla palestra"
-    form_class = CreateCorsoForm
+    title = "Aggiungi un disciplina alla palestra"
+    form_class = CreateDisciplinaForm
     template_name = "gestione/create_entry.html"
     success_url = reverse_lazy("gestione:home")
 
-class CreateOccorrenzaView(CreateCorsoView):
-    title = "Aggiungi una occorrenza ad un corso"
-    form_class = CreateOccorrenzaForm
+class CreateCorsoView(CreateDisciplinaView):
+    title = "Aggiungi una corso ad un disciplina"
+    form_class = CreateCorsoForm
 

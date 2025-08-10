@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, re_path, include
 from django.contrib.auth import views as auth_views
 from .views import *
-from .initcmds import *
+#from .initcmds import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,10 +28,10 @@ urlpatterns = [
     path("login/", auth_views.LoginView.as_view(), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
 
-    path("registerb/",GymCreateView.as_view(), name="registerg"),
+    path("registerg/",GymCreateView.as_view(), name="registerg"),
 
     path("gestione/", include("gestione.urls"))
 ]
 
 #erase_db()
-init_db()      
+#init_db()      
