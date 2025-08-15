@@ -38,7 +38,7 @@ class adminTest(TestCase):
 
 class gym_homeTest(TestCase):
     def test_home(self):
-        response = self.client.get(reverse('register'))
+        response = self.client.get(reverse('home'))
 
         self.assertEqual(response.status_code, 200)
 

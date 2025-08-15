@@ -35,6 +35,12 @@ class CorsoModelTest(TestCase):
         
         self.assertTrue(self.corso_disponibile.disponibile())
 
+class gestione_homeTest(TestCase):
+    def test_home(self):
+        response = self.client.get(reverse('gestione:home'))
+
+        self.assertEqual(response.status_code, 200)
+
 class DisciplinaListViewTest(TestCase):
     def setUp(self):
         self.disciplina1 = Disciplina.objects.create(nome='Yoga')
