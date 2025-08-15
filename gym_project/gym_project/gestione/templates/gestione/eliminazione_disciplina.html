@@ -1,30 +1,24 @@
 {% extends 'basegym.html' %}
 
-{% block title %} Cerca tra i corsi{% endblock %} 
-
 {% load crispy_forms_tags %} 
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous"> 
 
+{% block title %} Eliminazione {% endblock %} 
+
 {% block header1 %}
-  <h1>Cerca tra i corsi</h1>
+  <h1>Eliminazione della disciplina</h1>
 {% endblock %}
 
 {% block content %} 
 
-<h2> Cerca tra i corsi </h2>
-
-<br>
-
-<br>
-
-<div class="d-flex justify-content-center">
-
-  {% crispy form %}
-
+{% if "NO_ERRORS" == errore %}
+<div class="alert alert-success" role="alert">
+  L'eliminazione è andata a buon fine!
+{% else %}
+<div class="alert alert-danger" role="alert">
+  Eliminazione fallita: {{ errore }}
+{% endif %}
 </div>
-<br>
 
-
-<br>
 
 {% endblock %}

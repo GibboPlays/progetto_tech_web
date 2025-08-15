@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import path, re_path, include
 from django.contrib.auth import views as auth_views
 from .views import *
+from django.conf import settings
+from django.conf.urls.static import static
 #from .initcmds import *
 
 urlpatterns = [
@@ -27,11 +29,13 @@ urlpatterns = [
     path("register/", UserCreateView.as_view(), name="register"),
     path("login/", auth_views.LoginView.as_view(), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
-
     path("registerg/",GymCreateView.as_view(), name="registerg"),
 
     path("gestione/", include("gestione.urls"))
 ]
 
 #erase_db()
-#init_db()      
+#init_db()     
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

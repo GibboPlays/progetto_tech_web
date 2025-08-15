@@ -10,13 +10,14 @@
 
 <h2> {{ view.nome }} Numero corsi di {{disciplina.nome}}: {{ object_list.count }} </h2>
 
+
 <br>
 
 {% for corso in object_list %}
 <br>
 <div class="card">
   <div class="card-header">
-    Corso tenuto il {{ corso.data }}
+    Corso tenuto il {{ corso.data }} alle {{corso.ora}}
 
     <form action="{% url 'gestione:prenotazione' corso.pk%}" method="post">
     {% csrf_token %}

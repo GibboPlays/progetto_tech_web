@@ -1,0 +1,96 @@
+{% extends 'basegym.html' %}
+
+{% block title %} Lista dei corsi{% endblock %} 
+
+{% block header1 %}
+  <h1>Lista dei Corsi</h1>
+{% endblock %}
+
+{% block content %} 
+
+<h2> {{ view.nome }} Numero corsi del giorno {{data}}: {{ object_list.count }} </h2>
+
+<a href="{% url 'gestione:lista_corsi_giornalieri_data' giorno_precedente%}" class="btn btn-primary arrow-button">Indietro &larr;</a>
+<a href="{% url 'gestione:lista_corsi_giornalieri_data' giorno_successivo%}" class="btn btn-primary arrow-button">Avanti &rarr;</a>
+
+<div class="filter-container">
+    <form id="ricerca-form" method="get" action="{% url 'gestione:ricerca_corso_risultati' %}">
+        <input id="ricerca-input" type="text" name="ricerca" placeholder="Cerca data specifica...">
+        <button type="submit">Cerca</button>
+    </form>
+    <div id="errore-ricerca" class="alert alert-danger" style="display: none;"></div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('ricerca-form');
+        const input = document.getElementById('ricerca-input');
+        const erroreDiv = document.getElementById('errore-ricerca');
+
+        form.addEventListener('submit', function(e) {
+            const valoreInput = input.value.trim();
+
+            let errorMessage = ""
+
+            if (valoreInput == "") {
+                e.preventDefault(); 
+                
+                erroreDiv.style.display = 'block';
+                erroreDiv.textContent = "Inserisci una data";
+            } else {
+
+                const formatoDataValido = /^\d{2}\-\d{2}\-\d{4}$/.test(valoreInput);
+
+                if (!formatoDataValido) {
+                    errorMessage = "Formato data invalido (DD-MM-YYYY)";
+                }
+            }
+
+            if (!errorMessage) {
+                const partiData = valoreInput.split('-');
+                const giorno = parseInt(partiData[0], 10);
+                const mese = parseInt(partiData[1], 10) - 1; //Perchè i mesi in JS vanno da 0 a 11
+                const anno = parseInt(partiData[2], 10);
+
+                const dataOggetto = new Date(anno, mese, giorno);
+
+                // Confronta i valori inseriti con i valori dell'oggetto Date
+                if (dataOggetto.getFullYear() !== anno || dataOggetto.getMonth() !== mese || dataOggetto.getDate() !== giorno) {
+                    errorMessage = "Data non valida";
+                }
+            }
+
+            if (errorMessage) {
+                e.preventDefault();
+                erroreDiv.style.display = 'block';
+                erroreDiv.textContent = errorMessage;
+            } else {
+                erroreDiv.style.display = 'none';
+            }
+        });
+    });
+</script>
+
+<br>
+
+{% for corso in object_list %}
+<br>
+<div class="card">
+  <div class="card-header">
+    Corso di {{corso.disciplina.nome}}
+    tenuto il {{ corso.data }}
+    da {{corso.disciplina.personal_trainer.username}}
+
+    <form action="{% url 'gestione:prenotazione' corso.pk%}" method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Prenota</button>
+    </form>
+
+  </div>
+</div>
+<br>
+{%endfor%}
+
+<br>
+
+{% endblock %}

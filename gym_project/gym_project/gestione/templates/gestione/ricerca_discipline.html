@@ -24,6 +24,65 @@
 </div>
 <br>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputField = document.getElementById('id_search_string');
+        const whereField = document.getElementById('id_search_where');
+        
+        const suggestionsDiv = document.createElement('div');
+        suggestionsDiv.id = 'suggestions';
+        suggestionsDiv.style.cursor = 'pointer';
+        inputField.parentNode.insertBefore(suggestionsDiv, inputField.nextSibling);
+
+        const searchSocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/search/'
+        );
+        
+        //Listener del socket
+        searchSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const hint = data.response;
+
+            if (hint) {
+                suggestionsDiv.innerHTML = `<div class="suggestion-item">${hint}</div>`;
+                suggestionsDiv.style.display = 'block';
+            } else {
+                suggestionsDiv.innerHTML = '';
+                suggestionsDiv.style.display = 'none';
+            }
+        };
+
+        searchSocket.onerror = function(error) {
+            console.error('WebSocket Error:', error);
+        };
+
+        //Listener per input
+        inputField.addEventListener('input', function() {
+            const query = this.value;
+            const where = whereField.value;
+            
+            if (query.length > 2) {
+                searchSocket.send(JSON.stringify({
+                    'q': query,
+                    'w': where
+                }));
+            } else {
+                suggestionsDiv.innerHTML = '';
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+        
+        //Listener per click
+        suggestionsDiv.addEventListener('click', function(event) {
+            if (event.target.classList.contains('suggestion-item')) {
+                const selectedSuggestion = event.target.textContent;
+                inputField.value = selectedSuggestion;
+                suggestionsDiv.innerHTML = '';
+                suggestionsDiv.style.display = 'none';
+            }
+        }); 
+    });
+</script>
 
 <br>
 

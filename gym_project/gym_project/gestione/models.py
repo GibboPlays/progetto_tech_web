@@ -1,14 +1,69 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User , Group, UserManager
 
 # Create your models here.
+
+class PersonalTrainerManager(UserManager):
+    def create_user(self, username, email=None, password=None, **extra_fields):
+
+        user = super().create_user(username, email, password, **extra_fields)
+        
+        personal_trainers_group, created = Group.objects.get_or_create(name='Personal Trainers')
+        user.groups.add(personal_trainers_group)
+        
+        return user
+
+class AtletaManager(UserManager):
+    def create_user(self, username, email=None, password=None, **extra_fields):
+
+        user = super().create_user(username, email, password, **extra_fields)
+        
+        atleti_group, created = Group.objects.get_or_create(name='Atleti')
+        user.groups.add(atleti_group)
+        
+        return user
+
+class PersonalTrainer(User):
+    objects = PersonalTrainerManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = 'Personal Trainer'
+        verbose_name_plural = 'Personal Trainers'
+    
+    @staticmethod
+    def get_personal_trainers():
+        try:
+            group = Group.objects.get(name='Personal Trainers')
+            return User.objects.filter(groups=group)
+        except Group.DoesNotExist:
+            return User.objects.none()
+        
+class Atleta(User):
+    objects = AtletaManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = 'Atleta'
+        verbose_name_plural = 'Atleti'
+    
+    @staticmethod
+    def get_atleti():
+        try:
+            group = Group.objects.get(name='Atleti')
+            return User.objects.filter(groups=group)
+        except Group.DoesNotExist:
+            return User.objects.none()
 
 class Disciplina(models.Model):
     nome = models.CharField(max_length=200)
     personal_trainer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="discipline_gestite")
         
     def __str__(self):
-        pt_nome = self.personal_trainer.username if self.personal_trainer else "Nessuno"
+        if self.personal_trainer:
+            pt_nome = self.personal_trainer.username
+        else:
+            pt_nome = "Nessuno"
         out = self.nome + " svolto da " + pt_nome
         return out
 
@@ -17,7 +72,8 @@ class Disciplina(models.Model):
 
 class Corso(models.Model):
     disciplina = models.ForeignKey(Disciplina, on_delete=models.CASCADE, related_name="corsi")
-    data = models.DateField(null=True, blank=True)
+    data = models.DateField()
+    ora = models.TimeField()
     max_partecipanti = models.IntegerField()
     utenti = models.ManyToManyField(User, related_name="corsi_iscritto", blank=True)
 

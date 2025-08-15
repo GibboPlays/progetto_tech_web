@@ -5,11 +5,15 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse_lazy
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
-from django.views.generic.edit import CreateView
+from django.views.generic.edit import CreateView, UpdateView
+from django.views.generic import DeleteView
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
 from django.http import HttpResponse
+from django.urls import reverse
+import datetime
+from django.utils.html import escape
 
 # pipenv install django-braces
 from braces.views import GroupRequiredMixin
@@ -19,12 +23,10 @@ from braces.views import GroupRequiredMixin
 def gestione_home(request):
     return render(request,template_name="gestione/home.html")
 
-
 class DisciplinaListView(ListView):
     titolo = "La nostra palestra possiede"
     model = Disciplina
     template_name = "gestione/lista_discipline.html"
-
 
 def search_disciplina(request):
 
@@ -38,7 +40,6 @@ def search_disciplina(request):
         form = SearchForm()
 
     return render(request,template_name="gestione/ricerca_discipline.html",context={"form":form})
-    #return render(request,template_name="gestione/ricerca_ajax.html",context={"form":form})
 
 class DisciplinaRicercaView(DisciplinaListView):
     titolo = "La tua ricerca ha dato come risultato"
@@ -47,10 +48,10 @@ class DisciplinaRicercaView(DisciplinaListView):
         sstring = self.request.resolver_match.kwargs["sstring"] 
         where = self.request.resolver_match.kwargs["where"]
 
-        if "Nome" in where:
+        if "nome" in where:
             qq = self.model.objects.filter(nome__icontains=sstring)
         else:
-            qq = self.model.objects.filter(personaltrainer__icontains=sstring)
+            qq = self.model.objects.filter(personal_trainer__username__icontains=sstring)
 
         return qq
     
@@ -61,46 +62,102 @@ class CorsoListView(ListView):
 
     def get_queryset(self):
 
+        filtrato_plus = Corso.objects.filter(data=timezone.now().date(),ora__gt=timezone.now().time())
+
         filtrato = Corso.objects.filter(data__gt=timezone.now().date())
+
+        filtrato_plus = filtrato_plus.filter(disciplina__pk=self.kwargs['pk'])
         
         filtrato = filtrato.filter(disciplina__pk=self.kwargs['pk'])
 
-        return filtrato.exclude(utenti__pk=self.request.user.pk)
+        filtrato_plus = filtrato_plus.exclude(utenti__pk=self.request.user.pk)
+
+        filtrato = filtrato.exclude(utenti__pk=self.request.user.pk)
+
+        return filtrato.union(filtrato_plus)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['disciplina'] = Disciplina.objects.get(pk=self.kwargs['pk'])
         return context
 
-def search_corso(request):
+class CorsoListDailyView(ListView):
+    titolo = "Corsi del giorno"
+    model = Corso
+    template_name = "gestione/lista_corsi_giornalieri.html"
 
-    if request.method == "POST":
-        form = SearchForm(request.POST)
-        if form.is_valid():
-            sstring = form.cleaned_data.get("search_string")
-            where = form.cleaned_data.get("search_where")
-            return redirect("gestione:ricerca_corso_risultati", sstring, where)
-    else:
-        form = SearchForm()
+    def get_queryset(self):
 
-    return render(request,template_name="gestione/ricerca_corsi.html",context={"form":form})
-    #return render(request,template_name="gestione/ricerca_ajax.html",context={"form":form})
+        data_string = self.kwargs.get('data')
 
-class CorsoRicercaView(CorsoListView):
+        #Per distinguere il caso in cui ci arrivi dal menu principale o dalle frecce
+        if data_string:
+            data_filtro = datetime.datetime.strptime(data_string, '%d-%m-%Y').date()
+        else:
+            data_filtro = timezone.now().date()
+
+        filtrato = Corso.objects.filter(data=data_filtro)
+
+        return filtrato.exclude(utenti__pk=self.request.user.pk)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        data_string = self.kwargs.get('data')
+
+        if data_string:
+            data_corrente = datetime.datetime.strptime(data_string, '%d-%m-%Y').date()
+        else:
+            data_corrente = timezone.now().date()
+
+        context['data'] = data_corrente
+
+        giorno_precedente = data_corrente - datetime.timedelta(days=1)
+        giorno_successivo = data_corrente + datetime.timedelta(days=1)
+
+        context['giorno_precedente'] = giorno_precedente.strftime('%d-%m-%Y')
+        context['giorno_successivo'] = giorno_successivo.strftime('%d-%m-%Y')
+
+        return context
+
+class CorsoRicercaView(CorsoListDailyView):
     titolo = "La tua ricerca ha dato come risultato"
 
     #Per filtrare per disciplina i corsi
     def get_queryset(self):
-        sstring = self.request.resolver_match.kwargs["sstring"] 
-        where = self.request.resolver_match.kwargs["where"]
+        ricerca_query = self.request.GET.get('ricerca')
 
-        if "data" in where:
-            qq = self.model.objects.filter(data__icontains=sstring)
-        else:
-            qq = self.model.objects.filter(max_partecipanti__icontains=sstring)
+        if ricerca_query:
+            try:
+                data_corrente = datetime.datetime.strptime(ricerca_query, '%d-%m-%Y').date()
+
+                qq = self.model.objects.filter(data__icontains=data_corrente)
+            except ValueError:
+                return Corso.objects.none()
 
         return qq
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
+        ricerca_query = self.request.GET.get('ricerca')
+
+        if ricerca_query:
+            try:
+                data_corrente = datetime.datetime.strptime(ricerca_query, '%d-%m-%Y').date()
+            except ValueError:
+                data_corrente = timezone.date()
+
+        context['data'] = data_corrente
+
+        giorno_precedente = data_corrente - datetime.timedelta(days=1)
+        giorno_successivo = data_corrente + datetime.timedelta(days=1)
+
+        context['giorno_precedente'] = giorno_precedente.strftime('%d-%m-%Y')
+        context['giorno_successivo'] = giorno_successivo.strftime('%d-%m-%Y')
+
+        return context
+    
 @login_required
 def prenotazione(request, pk):
     corso = get_object_or_404(Corso,pk=pk)
@@ -109,7 +166,7 @@ def prenotazione(request, pk):
     if corso.disponibile() == False:
         errore = "Numero di posti esauriti!"
 
-    if corso.data < timezone.now().date():
+    if corso.data < timezone.now().date() or (corso.data == timezone.now().date() and corso.ora < timezone.now().time()):
         errore = "Il corso è già stato tenuto!"
 
     if (errore == "NO_ERRORS"):
@@ -150,41 +207,81 @@ def disdetta(request, pk):
 
     return render(request,"gestione/disdetta.html",{"errore":errore,"corso":corso})
 
-def get_hint(request):
-
-    response = request.GET["q"]
-
-    if(request.GET["w"]=="Nome"):
-        q = Disciplina.objects.filter(disciplina__icontains=response)
-        if len(q) > 0: 
-            response = q[0].nome
-    else: 
-        q = Disciplina.objects.filter(personaltrainer__icontains=response)
-        if len(q) > 0: 
-            response = q[0].personal_trainer
-
-    return HttpResponse(response)
-
 #Views per soli Personal Trainers
 
 class GymSituationView(GroupRequiredMixin, ListView):
     group_required = ["Personal Trainers"]
-    model = Corso
+    model = Disciplina
     template_name = "gestione/situationg.html"
 
 class GymDetailView(GroupRequiredMixin, DetailView):
     group_required = ["Personal Trainers"]
-    model = Corso
+    model = Disciplina
     template_name = "gestione/detailg.html"
 
 class CreateDisciplinaView(GroupRequiredMixin, CreateView):
     group_required = ["Personal Trainers"]
-    title = "Aggiungi un disciplina alla palestra"
+    title = "Aggiungi una disciplina alla palestra"
     form_class = CreateDisciplinaForm
     template_name = "gestione/create_entry.html"
     success_url = reverse_lazy("gestione:home")
 
 class CreateCorsoView(CreateDisciplinaView):
-    title = "Aggiungi una corso ad un disciplina"
+    title = "Aggiungi un corso ad una disciplina"
     form_class = CreateCorsoForm
+
+@login_required
+def elimina_disciplina(request, pk):
+    disciplina = get_object_or_404(Disciplina,pk=pk)
+    user = request.user
+
+    errore = "NO_ERRORS"
+    if not user.is_staff and user != disciplina.personal_trainer:
+        errore = "Non puoi eliminare una disciplina non tua!"
+
+    #Per evitare che per sbaglio venga eliminata una disciplina
+    if request.method == 'POST':
+        if errore == "NO_ERRORS":
+            try:
+                disciplina.delete()
+                print("Eliminazione effettuata con successo")
+            except Exception as e:
+                print("Errore! " + str(e))
+                errore = "Errore nell'operazione di eliminazione"
+
+    return render(request,"gestione/eliminazione_disciplina.html",{"errore":errore})
+
+@login_required
+def elimina_corso(request, pk):
+    corso = get_object_or_404(Corso,pk=pk)
+    user = request.user
+
+    errore = "NO_ERRORS"
+    if not user.is_staff and user != corso.disciplina.personal_trainer:
+        errore = "Non puoi eliminare un corso non tuo!"
+
+    #Per evitare che per sbaglio venga eliminato un corso
+    if request.method == 'POST':
+        if errore == "NO_ERRORS":
+            try:
+                corso.delete()
+                print("Eliminazione effettuata con successo")
+            except Exception as e:
+                print("Errore! " + str(e))
+                errore = "Errore nell'operazione di eliminazione"
+
+    return render(request,"gestione/eliminazione_corso.html",{"errore":errore})
+
+class UpdateDisciplinaView(GroupRequiredMixin, UpdateView):
+    group_required = ["Personal Trainers"]
+    title = "Modifica una disciplina della palestra"
+    form_class = UpdateDisciplinaForm
+    model = Disciplina
+    template_name = "gestione/create_entry.html"
+    success_url = reverse_lazy("gestione:home")
+
+class UpdateCorsoView(UpdateDisciplinaView):
+    title = "Modifica un corso di una disciplina"
+    form_class = UpdateCorsoForm
+    model = Corso
 

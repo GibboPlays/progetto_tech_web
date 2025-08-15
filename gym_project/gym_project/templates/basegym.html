@@ -82,6 +82,10 @@
           <a class="nav-link" href="{% url 'gestione:cercadisciplina' %}">Cerca un Disciplina</a>
         </li>
 
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'gestione:lista_corsi_giornalieri'  %}">Corsi per giorno</a>
+        </li>
+
       </ul>
     </div> 
     {% endblock %} 
@@ -123,6 +127,12 @@
       {% endif %}
 
       <a class="btn btn-warning" href="/admin/" role="button">Admin Login</a>
+
+      {% if user.is_staff %}
+        <br>
+        <a href="{% url 'registerg' %}" class="list-group-item list-group-item-danger">Iscrivi un personal trainer</a>
+        <br>
+      {% endif %}
     
     {%  endblock %}
   </div>

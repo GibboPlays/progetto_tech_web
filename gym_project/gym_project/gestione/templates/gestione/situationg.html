@@ -20,13 +20,19 @@
 <br>
 <div class="card">
   <div class="card-header">
-     Disciplina con id {{ d.pk }}
+     Tenuto da {{d.personal_trainer.username}}
   </div>
   <div class="card-body">
-    <h5 class="card-title">{{ d.nome }} di {{d.personal_trainer.username}} </h5>
-    <p class="card-text"> {{ d }} </p>
+    <h5 class="card-title">{{ d.nome }}  </h5>
     
     <a href="{% url 'gestione:detailg' d.pk %}" class="btn btn-info"> Visualizza Dettagli Aggiuntivi </a> 
+
+    <form method="post" action="{% url 'gestione:eliminadisciplina' d.pk %}" style="display:inline;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-info"> Elimina Disciplina </button>
+    </form>
+
+    <a href="{% url 'gestione:modificadisciplina' d.pk %}" class="btn btn-info"> Modifica Disciplina </a> 
 
   </div>
 </div>

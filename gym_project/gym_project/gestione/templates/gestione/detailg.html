@@ -3,7 +3,7 @@
 {% load crispy_forms_tags %} 
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous"> 
 
-{% block title %} Dettagli di {{object.titolo}} {% endblock %} 
+{% block title %} Dettagli di {{object.nome}} {% endblock %} 
 
 {% block header1 %}
   <h1> {{object}}</h1>
@@ -14,20 +14,26 @@
 <br>
 <div class="card">
   <div class="card-header">
-     Disciplina con id {{ object.pk }}
+     {{ object.nome }} di {{object.personal_trainer.username}}
   </div>
   <div class="card-body">
-    <h5 class="card-title">{{ object.titolo }} di {{object.autore}} </h5>
     <p class="card-text"> 
       <ul>
             {% for c in object.corsi.all %}
 
-            <li>  Occorrenze con id: {{c.pk}} 
-               {% if !c.disponibile()  %}
+            <li>  {{c.data}} alle {{c.ora}}
+               {% if not c.disponibile  %}
                   ha raggiunto il numero massimo di partecipanti ({{c.max_partecipanti}})
                {% else %} 
                   Prenotabile.
                 {% endif %}
+
+                <form method="post" action="{% url 'gestione:eliminacorso' c.pk %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-info"> Elimina Corso </button>
+                </form>
+
+                <a href="{% url 'gestione:modificacorso' c.pk %}" class="btn btn-info"> Modifica Corso </a> 
             </li>
 
             {% endfor %}
