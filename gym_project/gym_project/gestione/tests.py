@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 from datetime import *
 from django.urls import reverse
 from django.utils import timezone
-from datetime import timedelta
 from freezegun import freeze_time
 from gym_project.asgi import application
 from channels.testing import WebsocketCommunicator

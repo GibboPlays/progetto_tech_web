@@ -130,8 +130,8 @@
 
       {% if user.is_staff %}
         <br>
-        <a href="{% url 'registerg' %}" class="list-group-item list-group-item-danger">Iscrivi un personal trainer</a>
-        <br>
+        <a class="btn btn-warning" href="{% url 'registerg' %}" role="button">Iscrivi un personal trainer</a>
+        </br>
       {% endif %}
     
     {%  endblock %}
