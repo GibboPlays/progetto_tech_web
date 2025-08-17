@@ -14,6 +14,7 @@ from django.http import HttpResponse
 from django.urls import reverse
 import datetime
 from django.utils.html import escape
+from django.http import Http404
 
 # pipenv install django-braces
 from braces.views import GroupRequiredMixin
@@ -48,10 +49,13 @@ class DisciplinaRicercaView(DisciplinaListView):
         sstring = self.request.resolver_match.kwargs["sstring"] 
         where = self.request.resolver_match.kwargs["where"]
 
+
         if "nome" in where:
             qq = self.model.objects.filter(nome__icontains=sstring)
-        else:
+        elif "personal_trainer" in where:
             qq = self.model.objects.filter(personal_trainer__username__icontains=sstring)
+        else:
+            qq = self.model.objects.none()
 
         return qq
     
@@ -78,7 +82,10 @@ class CorsoListView(ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['disciplina'] = Disciplina.objects.get(pk=self.kwargs['pk'])
+        try:
+            context['disciplina'] = get_object_or_404(Disciplina, pk=self.kwargs['pk'])
+        except Http404:
+            context['errore']='Disciplina non esistente'
         return context
 
 class CorsoListDailyView(ListView):
@@ -92,7 +99,10 @@ class CorsoListDailyView(ListView):
 
         #Per distinguere il caso in cui ci arrivi dal menu principale o dalle frecce
         if data_string:
-            data_filtro = datetime.datetime.strptime(data_string, '%d-%m-%Y').date()
+            try:
+                data_filtro = datetime.datetime.strptime(data_string, '%d-%m-%Y').date()
+            except ValueError:
+                data_filtro = timezone.now().date()
         else:
             data_filtro = timezone.now().date()
 
@@ -106,7 +116,10 @@ class CorsoListDailyView(ListView):
         data_string = self.kwargs.get('data')
 
         if data_string:
-            data_corrente = datetime.datetime.strptime(data_string, '%d-%m-%Y').date()
+            try:
+                data_corrente = datetime.datetime.strptime(data_string, '%d-%m-%Y').date()
+            except ValueError:
+                data_corrente = timezone.now().date()
         else:
             data_corrente = timezone.now().date()
 
@@ -160,9 +173,12 @@ class CorsoRicercaView(CorsoListDailyView):
     
 @login_required
 def prenotazione(request, pk):
-    corso = get_object_or_404(Corso,pk=pk)
-
     errore = "NO_ERRORS"
+    try:
+        corso = get_object_or_404(Corso,pk=pk)
+    except Http404:
+        return render(request,"gestione/prenotazione.html",{"errore":"Corso non esistente"})
+
     if corso.disponibile() == False:
         errore = "Numero di posti esauriti!"
 
@@ -189,10 +205,13 @@ def my_situation(request):
 
 @login_required
 def disdetta(request, pk):
-    corso = get_object_or_404(Corso,pk=pk)
+    errore = "NO_ERRORS"
+    try:
+        corso = get_object_or_404(Corso,pk=pk)
+    except Http404:
+        return render(request,"gestione/disdetta.html",{"errore":"Corso non esistente"})
     user = request.user
 
-    errore = "NO_ERRORS"
     if user not in corso.utenti.all():
         errore = "Non puoi disdire una prenotazione non tua!"
 
@@ -232,10 +251,13 @@ class CreateCorsoView(CreateDisciplinaView):
 
 @login_required
 def elimina_disciplina(request, pk):
-    disciplina = get_object_or_404(Disciplina,pk=pk)
+    errore = "NO_ERRORS"
+    try:
+        disciplina = get_object_or_404(Disciplina,pk=pk)
+    except Http404:
+        return render(request,"gestione/eliminazione_disciplina.html",{"errore":"Disciplina non esistente"})
     user = request.user
 
-    errore = "NO_ERRORS"
     if not user.is_staff and user != disciplina.personal_trainer:
         errore = "Non puoi eliminare una disciplina non tua!"
 
@@ -253,10 +275,13 @@ def elimina_disciplina(request, pk):
 
 @login_required
 def elimina_corso(request, pk):
-    corso = get_object_or_404(Corso,pk=pk)
+    errore = "NO_ERRORS"
+    try:
+        corso = get_object_or_404(Corso,pk=pk)
+    except Http404:
+        return render(request,"gestione/eliminazione_corso.html",{"errore":"Corso non esistente"})
     user = request.user
 
-    errore = "NO_ERRORS"
     if not user.is_staff and user != corso.disciplina.personal_trainer:
         errore = "Non puoi eliminare un corso non tuo!"
 

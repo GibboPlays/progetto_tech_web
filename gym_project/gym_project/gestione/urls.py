@@ -18,7 +18,7 @@ urlpatterns = [
     path("disdetta/<int:pk>/", disdetta, name="disdetta"),
 
     path("situationg/", GymSituationView.as_view(),name="situationg"),
-    path("detailg/<pk>/", GymDetailView.as_view(), name="detailg"),
+    path("detailg/<int:pk>/", GymDetailView.as_view(), name="detailg"),
     path("crea_disciplina/",CreateDisciplinaView.as_view(),name="creadisciplina"),
     path("crea_corso/",CreateCorsoView.as_view(),name="creacorso"),
     path("elimina_disciplina/<int:pk>/",elimina_disciplina,name="eliminadisciplina"),

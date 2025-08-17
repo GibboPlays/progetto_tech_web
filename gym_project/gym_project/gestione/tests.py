@@ -7,6 +7,8 @@ from django.utils import timezone
 from freezegun import freeze_time
 from gym_project.asgi import application
 from channels.testing import WebsocketCommunicator
+from django.db.models import Max
+
 
 class CorsoModelTest(TestCase):
     def setUp(self):
@@ -90,6 +92,15 @@ class DisciplinaSearchViewTest(TestCase):
         self.assertIn(self.disciplina2, response.context['object_list'])
         self.assertNotIn(self.disciplina1, response.context['object_list'])
 
+    def test_ricerca_where_sbagliato(self):
+
+        response = self.client.get(reverse('gestione:ricerca_disciplina_risultati', args=['Calisthenics','pippo']))
+        
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.context['object_list'].count(), 0)
+
+
 class CorsoListViewTest(TestCase):
     def setUp(self):
         self.atleta = Atleta.objects.create_user(username='Atleta1', password='password123')
@@ -141,16 +152,32 @@ class CorsoListViewTest(TestCase):
         self.assertNotIn(self.corso2, response.context['object_list'])
         self.assertNotIn(self.corso3, response.context['object_list'])
 
+    def test_lista_pk_non_esistente(self):
+        max_pk = Disciplina.objects.aggregate(max_pk=Max('pk'))['max_pk']
+        non_existent_pk = max_pk + 1
+
+        response = self.client.get(reverse('gestione:listacorsi',args=[non_existent_pk])) 
+        
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(len(response.context['object_list']), 0)
+
 class CorsoListDailyViewTest(TestCase):
     def setUp(self):
         self.atleta = Atleta.objects.create_user(username='Atleta1', password='password123')
         self.client.force_login(self.atleta)
 
+        data_corrente = timezone.now().date()
+
+        giorno_precedente = data_corrente - timedelta(days=1)
+        giorno_successivo = data_corrente + timedelta(days=1)
+
         self.disciplina1 = Disciplina.objects.create(nome='Yoga')
         self.disciplina2 = Disciplina.objects.create(nome='Calisthenics')
-        self.corso1 = Corso.objects.create(disciplina=self.disciplina1,data=timezone.now().date(),ora=time(10,0),max_partecipanti=23)
-        self.corso2 = Corso.objects.create(disciplina=self.disciplina1,data=date(2032,11,19),ora=time(10,0),max_partecipanti=23)
-        self.corso3 = Corso.objects.create(disciplina=self.disciplina2,data=timezone.now().date(),ora=time(12,0),max_partecipanti=23)
+        self.corso1 = Corso.objects.create(disciplina=self.disciplina1,data=giorno_precedente,ora=time(10,0),max_partecipanti=23)
+        self.corso2 = Corso.objects.create(disciplina=self.disciplina1,data=data_corrente,ora=time(10,0),max_partecipanti=23)
+        self.corso3 = Corso.objects.create(disciplina=self.disciplina1,data=giorno_successivo,ora=time(10,0),max_partecipanti=23)
+        self.corso4 = Corso.objects.create(disciplina=self.disciplina2,data=data_corrente,ora=time(12,0),max_partecipanti=23)
 
     def test_lista_giornaliera(self):
         response = self.client.get(reverse('gestione:lista_corsi_giornalieri')) 
@@ -159,12 +186,13 @@ class CorsoListDailyViewTest(TestCase):
 
         self.assertEqual(len(response.context['object_list']), 2)
 
-        self.assertIn(self.corso1, response.context['object_list'])
-        self.assertIn(self.corso3, response.context['object_list'])
-        self.assertNotIn(self.corso2, response.context['object_list'])
+        self.assertIn(self.corso2, response.context['object_list'])
+        self.assertIn(self.corso4, response.context['object_list'])
+        self.assertNotIn(self.corso1, response.context['object_list'])
+        self.assertNotIn(self.corso3, response.context['object_list'])
 
     def test_lista_giornaliera_con_prenotati(self):
-        self.corso3.utenti.add(self.atleta)
+        self.corso4.utenti.add(self.atleta)
 
         response = self.client.get(reverse('gestione:lista_corsi_giornalieri')) 
         
@@ -172,10 +200,55 @@ class CorsoListDailyViewTest(TestCase):
 
         self.assertEqual(len(response.context['object_list']), 1)
 
-        self.assertIn(self.corso1, response.context['object_list'])
+        self.assertIn(self.corso2, response.context['object_list'])
+        self.assertNotIn(self.corso1, response.context['object_list'])
         self.assertNotIn(self.corso3, response.context['object_list'])
-        self.assertNotIn(self.corso2, response.context['object_list'])
+        self.assertNotIn(self.corso4, response.context['object_list'])
 
+    def test_lista_giornaliera_indietro(self):
+        data = self.corso2.data.strftime('%d-%m-%Y')
+        response = self.client.get(reverse('gestione:lista_corsi_giornalieri_data', args=[data])) 
+
+        self.assertEqual(response.context['giorno_precedente'], self.corso1.data.strftime('%d-%m-%Y'))
+
+        url_indietro = reverse('gestione:lista_corsi_giornalieri_data', args=[response.context['giorno_precedente']])
+        response_indietro = self.client.get(url_indietro)
+
+        self.assertEqual(response_indietro.status_code, 200)
+
+        self.assertIn(self.corso1, response_indietro.context['object_list'])
+        self.assertNotIn(self.corso2, response_indietro.context['object_list'])
+        self.assertNotIn(self.corso3, response_indietro.context['object_list'])
+        self.assertNotIn(self.corso4, response_indietro.context['object_list'])
+
+    def test_lista_giornaliera_avanti(self):
+        data = self.corso2.data.strftime('%d-%m-%Y')
+        response = self.client.get(reverse('gestione:lista_corsi_giornalieri_data', args=[data])) 
+
+        self.assertEqual(response.context['giorno_successivo'], self.corso3.data.strftime('%d-%m-%Y'))
+
+        url_avanti = reverse('gestione:lista_corsi_giornalieri_data', args=[response.context['giorno_successivo']])
+        response_avanti = self.client.get(url_avanti)
+
+        self.assertEqual(response_avanti.status_code, 200)
+
+        self.assertIn(self.corso3, response_avanti.context['object_list'])
+        self.assertNotIn(self.corso1, response_avanti.context['object_list'])
+        self.assertNotIn(self.corso2, response_avanti.context['object_list'])
+        self.assertNotIn(self.corso4, response_avanti.context['object_list'])
+
+    def test_lista_giornaliera_data_non_esistente(self):
+        data = 'pippo'
+        response = self.client.get(reverse('gestione:lista_corsi_giornalieri_data', args=[data])) 
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(len(response.context['object_list']), 2)
+
+        self.assertIn(self.corso2, response.context['object_list'])
+        self.assertIn(self.corso4, response.context['object_list'])
+        self.assertNotIn(self.corso1, response.context['object_list'])
+        self.assertNotIn(self.corso3, response.context['object_list'])
 
 class CorsoSearchViewTest(TestCase):
     def setUp(self):
@@ -203,53 +276,55 @@ class CorsoSearchViewTest(TestCase):
         self.assertNotIn(self.corso1, response.context['object_list'])
         self.assertNotIn(self.corso3, response.context['object_list'])
 
-    def test_lista_giornaliera_indietro(self):
-        data = self.corso2.data.strftime('%d-%m-%Y')
-        response = self.client.get(reverse('gestione:lista_corsi_giornalieri_data', args=[data])) 
-
-        self.assertEqual(response.context['giorno_precedente'], self.corso1.data.strftime('%d-%m-%Y'))
-
-        url_indietro = reverse('gestione:lista_corsi_giornalieri_data', args=[response.context['giorno_precedente']])
-        response_indietro = self.client.get(url_indietro)
-
-        self.assertEqual(response_indietro.status_code, 200)
-
-        self.assertIn(self.corso1, response_indietro.context['object_list'])
-        self.assertNotIn(self.corso2, response_indietro.context['object_list'])
-        self.assertNotIn(self.corso3, response_indietro.context['object_list'])
-
-    def test_lista_giornaliera_avanti(self):
-        data = self.corso2.data.strftime('%d-%m-%Y')
-        response = self.client.get(reverse('gestione:lista_corsi_giornalieri_data', args=[data])) 
-
-        self.assertEqual(response.context['giorno_successivo'], self.corso3.data.strftime('%d-%m-%Y'))
-
-        url_avanti = reverse('gestione:lista_corsi_giornalieri_data', args=[response.context['giorno_successivo']])
-        response_avanti = self.client.get(url_avanti)
-
-        self.assertEqual(response_avanti.status_code, 200)
-
-        self.assertIn(self.corso3, response_avanti.context['object_list'])
-        self.assertNotIn(self.corso1, response_avanti.context['object_list'])
-        self.assertNotIn(self.corso2, response_avanti.context['object_list'])
-
 class prenotazioneTest(TestCase):
     def setUp(self):
-        self.atleta = Atleta.objects.create_user(username='Atleta1', password='password123')
-        self.client.force_login(self.atleta)
+        self.atleta1 = Atleta.objects.create_user(username='Atleta1', password='password123')
+        self.client.force_login(self.atleta1)
+        self.atleta2 = Atleta.objects.create_user(username='Atleta2', password='password123')
 
         self.disciplina1 = Disciplina.objects.create(nome='Yoga')
         self.corso1 = Corso.objects.create(disciplina=self.disciplina1,data=date(2032,11,18),ora=time(10,0),max_partecipanti=23)
-        self.corso2 = Corso.objects.create(disciplina=self.disciplina1,data=date(2032,11,19),ora=time(10,0),max_partecipanti=23)
+        self.corso2 = Corso.objects.create(disciplina=self.disciplina1,data=date(2032,11,19),ora=time(10,0),max_partecipanti=1)
+        self.corso3 = Corso.objects.create(disciplina=self.disciplina1,data=date(2010,11,19),ora=time(10,0),max_partecipanti=1)
 
     def test_prenotazione(self):
-        self.assertNotIn(self.atleta, self.corso1.utenti.all())
+        self.assertNotIn(self.atleta1, self.corso1.utenti.all())
 
         response = self.client.get(reverse('gestione:prenotazione', args=[self.corso1.pk]))
 
         self.assertEqual(response.status_code, 200)
 
-        self.assertIn(self.atleta, self.corso1.utenti.all())
+        self.assertIn(self.atleta1, self.corso1.utenti.all())
+
+    def test_prenotazione_corso_pieno(self):
+        self.corso2.utenti.add(self.atleta2)
+
+        response = self.client.get(reverse('gestione:prenotazione', args=[self.corso2.pk]))
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertNotIn(self.atleta1, self.corso2.utenti.all())
+
+        self.assertEqual(response.context['errore'],"Numero di posti esauriti!")
+
+    def test_prenotazione_corso_già_svolto(self):
+        response = self.client.get(reverse('gestione:prenotazione', args=[self.corso3.pk]))
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertNotIn(self.atleta1, self.corso3.utenti.all())
+
+        self.assertEqual(response.context['errore'],"Il corso è già stato tenuto!")
+
+    def test_prenotazione_pk_non_esistente(self):
+        max_pk = Corso.objects.aggregate(max_pk=Max('pk'))['max_pk']
+        non_existent_pk = max_pk + 1
+
+        response = self.client.get(reverse('gestione:prenotazione', args=[non_existent_pk]))
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.context['errore'],"Corso non esistente")
 
 class my_situationTest(TestCase):
     def setUp(self):
@@ -290,6 +365,24 @@ class disdettaTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertNotIn(self.atleta, self.corso1.utenti.all())
+
+    def test_disdetta_corso_non_prenotato(self):
+        response = self.client.get(reverse('gestione:disdetta', args=[self.corso1.pk]))
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.context['errore'],"Non puoi disdire una prenotazione non tua!")
+
+
+    def test_disdetta_pk_non_esistente(self):
+        max_pk = Corso.objects.aggregate(max_pk=Max('pk'))['max_pk']
+        non_existent_pk = max_pk + 1
+
+        response = self.client.get(reverse('gestione:disdetta', args=[non_existent_pk]))
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.context['errore'],"Corso non esistente")
 
 class SearchConsumerTest(TestCase):
 
@@ -401,6 +494,14 @@ class GymDetailViewTest(TestCase):
         self.assertNotIn(self.corso1, response.context['object'].corsi.all())
         self.assertNotIn(self.corso2, response.context['object'].corsi.all())
 
+    def test_lista_disciplina_non_esistente(self):
+        max_pk = Disciplina.objects.aggregate(max_pk=Max('pk'))['max_pk']
+        non_existent_pk = max_pk + 1
+
+        response = self.client.get(reverse('gestione:detailg', args=[non_existent_pk]))
+        
+        self.assertEqual(response.status_code, 404)
+
 class CreateDisciplinaViewTest(TestCase):
     def setUp(self):
         self.personal_trainer = PersonalTrainer.objects.create_user(username='PersonalTrainer1', password='password123')
@@ -501,6 +602,16 @@ class elimina_disciplinaTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertIn(self.disciplina2, Disciplina.objects.all())
+
+    def test_elimina_disciplina_non_esistente(self):
+        max_pk = Disciplina.objects.aggregate(max_pk=Max('pk'))['max_pk']
+        non_existent_pk = max_pk + 1
+
+        response = self.client.post(reverse('gestione:eliminadisciplina',args=[non_existent_pk]))
+        
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.context['errore'],"Disciplina non esistente")
     
     def test_elimina_disciplina_tua_con_get(self):
         response = self.client.get(reverse('gestione:eliminadisciplina',args=[self.disciplina1.pk]))
@@ -533,6 +644,16 @@ class elimina_corsoTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertIn(self.corso2, Corso.objects.all())
+    
+    def test_elimina_corso_non_esistente(self):
+        max_pk = Corso.objects.aggregate(max_pk=Max('pk'))['max_pk']
+        non_existent_pk = max_pk + 1
+
+        response = self.client.post(reverse('gestione:eliminacorso',args=[non_existent_pk]))
+        
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.context['errore'],"Corso non esistente")
     
     def test_elimina_corso_tuo_con_get(self):
         response = self.client.get(reverse('gestione:eliminacorso',args=[self.corso1.pk]))
@@ -574,6 +695,18 @@ class UpdateDisciplinaViewTest(TestCase):
         disciplina_aggiornata = Disciplina.objects.get(pk=self.disciplina1.pk)
 
         self.assertEqual(disciplina_aggiornata.personal_trainer, self.personal_trainer2)
+
+    def test_modifica_disciplina_non_esistente(self):
+        dati = {
+            'nome':'Yoga',
+            'personal_trainer':self.personal_trainer2.pk
+        }
+        max_pk = Disciplina.objects.aggregate(max_pk=Max('pk'))['max_pk']
+        non_existent_pk = max_pk + 1
+
+        response = self.client.post(reverse('gestione:modificadisciplina',args=[non_existent_pk]),data=dati)
+        
+        self.assertEqual(response.status_code, 404)
     
     def test_modifica_nome_disciplina_con_get(self):
         dati = {
@@ -656,6 +789,21 @@ class UpdateCorsoViewTest(TestCase):
         corso_aggiornato = Corso.objects.get(pk=self.corso1.pk)
 
         self.assertEqual(corso_aggiornato.max_partecipanti,78)
+
+    def test_modifica_corso_non_esistente(self):
+        dati = {
+            'disciplina':self.disciplina2.pk,
+            'data':date(2032,11,18),
+            'ora':time(10,0),
+            'max_partecipanti':23
+        }
+        max_pk = Corso.objects.aggregate(max_pk=Max('pk'))['max_pk']
+        non_existent_pk = max_pk + 1
+
+        response = self.client.post(reverse('gestione:modificacorso',args=[non_existent_pk]),data=dati)
+        
+        self.assertEqual(response.status_code, 404)
+    
 
     def test_modifica_disciplina_corso_con_get(self):
         dati = {

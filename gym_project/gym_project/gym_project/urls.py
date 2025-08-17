@@ -20,7 +20,7 @@ from django.contrib.auth import views as auth_views
 from .views import *
 from django.conf import settings
 from django.conf.urls.static import static
-from .initcmds import *
+#from .initcmds import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -34,8 +34,8 @@ urlpatterns = [
     path("gestione/", include("gestione.urls"))
 ]
 
-erase_db()
-init_db()     
+#erase_db()
+#init_db()     
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

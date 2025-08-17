@@ -2,8 +2,9 @@
 
 {% load crispy_forms_tags %} 
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous"> 
-
-{% block title %} Prenotazione del corso di {{corso.disciplina.nome}} {% endblock %} 
+{% if corso %}
+  {% block title %} Prenotazione del corso di {{corso.disciplina.nome}} {% endblock %} 
+{% endif %}
 
 {% block header1 %}
   <h1>{{corso.disciplina.nome}}</h1>
@@ -16,7 +17,7 @@
   La Prenotazione è andata a buon fine: potrai presentarti al corso della disciplina
 {% else %}
 <div class="alert alert-danger" role="alert">
-  Prenotazione fallito: {{ errore }}
+  Prenotazione fallita: {{ errore }}
 {% endif %}
 </div>
 

@@ -7,9 +7,11 @@
 {% endblock %}
 
 {% block content %} 
-
-<h2> {{ view.nome }} Numero corsi di {{disciplina.nome}}: {{ object_list.count }} </h2>
-
+{% if c.disponibile  %}
+  <h2> {{ view.nome }} Numero corsi di {{disciplina.nome}}: {{ object_list.count }} </h2>
+{% else %}
+  {{errore}}
+{% endif %}
 
 <br>
 

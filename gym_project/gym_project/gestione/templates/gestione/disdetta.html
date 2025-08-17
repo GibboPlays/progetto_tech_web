@@ -2,13 +2,13 @@
 
 {% load crispy_forms_tags %} 
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous"> 
+{% if corso %}
+  {% block title %} Disdetta di {{corso.disciplina.nome}} {% endblock %} 
 
-{% block title %} Disdetta di {{corso.disciplina.nome}} {% endblock %} 
-
-{% block header1 %}
-  <h1>Corso della disciplina il {{corso.data}} alle {{corso.ora}}</h1>
-{% endblock %}
-
+  {% block header1 %}
+    <h1>Corso della disciplina il {{corso.data}} alle {{corso.ora}}</h1>
+  {% endblock %}
+{% endif %}
 {% block content %} 
 
 {% if "NO_ERRORS" == errore %}
